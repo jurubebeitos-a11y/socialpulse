@@ -1,0 +1,333 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Pulse - Painel de Redes Sociais</title>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <style>
+    :root {
+      --bg-dark: #0b0f19;
+      --card-bg: #151c28;
+      --card-border: #232d3f;
+      --primary-purple: #7c3aed;
+      --primary-purple-hover: #6d28d9;
+      --cyan-line: #38bdf8;
+      --green-growth: #22c55e;
+      --text-main: #f3f4f6;
+      --text-muted: #9ca3af;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; }
+    body { background-color: var(--bg-dark); color: var(--text-main); display: flex; min-height: 100vh; }
+
+    /* Sidebar */
+    .sidebar { width: 64px; background-color: var(--card-bg); border-right: 1px solid var(--card-border); display: flex; flex-direction: column; align-items: center; padding: 20px 0; gap: 24px; }
+    .sidebar .logo { font-weight: 800; color: var(--primary-purple); font-size: 1.2rem; margin-bottom: 12px; }
+    .nav-item { color: var(--text-muted); cursor: pointer; padding: 10px; border-radius: 8px; transition: 0.2s; }
+    .nav-item:hover, .nav-item.active { color: var(--primary-purple); background-color: rgba(124, 58, 237, 0.1); }
+
+    /* Main Container */
+    .main-wrapper { flex: 1; padding: 24px; max-width: 1200px; margin: 0 auto; width: 100%; }
+
+    /* Header */
+    .header { display: flex; justify-content: space-between; align-items: flex-start; flex-wrap: wrap; gap: 16px; margin-bottom: 24px; }
+    .header-title h1 { font-size: 1.8rem; font-weight: 700; }
+    .header-title p { color: var(--text-muted); font-size: 0.9rem; margin-top: 4px; }
+    .header-actions { display: flex; gap: 12px; align-items: center; }
+
+    select.timeframe-select { background-color: var(--card-bg); border: 1px solid var(--card-border); color: var(--text-main); padding: 10px 16px; border-radius: 8px; outline: none; cursor: pointer; }
+    .btn-connect { background-color: var(--primary-purple); color: #fff; border: none; padding: 10px 20px; border-radius: 8px; font-weight: 600; cursor: pointer; transition: 0.2s; }
+    .btn-connect:hover { background-color: var(--primary-purple-hover); }
+
+    /* Metrics Grid */
+    .metrics-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 16px; margin-bottom: 24px; }
+    .metric-card { background-color: var(--card-bg); border: 1px solid var(--card-border); border-radius: 12px; padding: 20px; }
+    .metric-card span.label { color: var(--text-muted); font-size: 0.85rem; }
+    .metric-card .value { font-size: 1.8rem; font-weight: 700; margin: 8px 0 4px 0; }
+    .metric-card .growth { color: var(--green-growth); font-size: 0.8rem; font-weight: 600; display: flex; align-items: center; gap: 4px; }
+
+    /* Chart Section */
+    .chart-card { background-color: var(--card-bg); border: 1px solid var(--card-border); border-radius: 12px; padding: 20px; margin-bottom: 24px; }
+    .chart-card h3 { font-size: 1.1rem; margin-bottom: 16px; font-weight: 600; }
+    .chart-container { position: relative; height: 300px; width: 100%; }
+
+    /* Connected Accounts */
+    .accounts-card { background-color: var(--card-bg); border: 1px solid var(--card-border); border-radius: 12px; padding: 20px; }
+    .accounts-card h3 { font-size: 1.1rem; margin-bottom: 16px; font-weight: 600; }
+    .accounts-list { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 12px; }
+    .account-item { display: flex; align-items: center; justify-content: space-between; background: rgba(255,255,255,0.02); padding: 12px 16px; border-radius: 8px; border: 1px solid var(--card-border); }
+    .account-info { display: flex; align-items: center; gap: 12px; }
+    .platform-icon { width: 36px; height: 36px; border-radius: 8px; background-color: #232d3f; display: flex; align-items: center; justify-content: center; font-weight: bold; font-size: 0.85rem; }
+    .account-details h4 { font-size: 0.95rem; }
+    .account-details p { font-size: 0.8rem; color: var(--text-muted); }
+    .status-badge { width: 8px; height: 8px; border-radius: 50%; background-color: var(--green-growth); }
+    .status-badge.disconnected { background-color: #ef4444; }
+
+    /* Modal for API Keys */
+    .modal-overlay { position: fixed; top:0; left:0; width:100%; height:100%; background: rgba(0,0,0,0.8); display:none; justify-content:center; align-items:center; z-index: 100; }
+    .modal-content { background: var(--card-bg); border: 1px solid var(--card-border); padding: 24px; border-radius: 12px; width: 90%; max-width: 500px; max-height: 85vh; overflow-y: auto; }
+    .modal-content h2 { margin-bottom: 12px; }
+    .api-field { margin-bottom: 16px; }
+    .api-field label { display: block; font-size: 0.85rem; color: var(--text-muted); margin-bottom: 4px; }
+    .api-field input { width: 100%; padding: 10px; background: var(--bg-dark); border: 1px solid var(--card-border); border-radius: 6px; color: #fff; }
+    .modal-actions { display: flex; justify-content: flex-end; gap: 10px; margin-top: 20px; }
+    .btn-secondary { background: transparent; border: 1px solid var(--card-border); color: #fff; padding: 8px 16px; border-radius: 6px; cursor: pointer; }
+  </style>
+</head>
+<body>
+
+  <aside class="sidebar">
+    <div class="logo">P</div>
+    <div class="nav-item active">📊</div>
+    <div class="nav-item">⚙️</div>
+  </aside>
+
+  <main class="main-wrapper">
+    <header class="header">
+      <div class="header-title">
+        <h1>Visão geral</h1>
+        <p>Todos os seus canais em um só painel · <span id="timeframe-label">Últimos 30 dias</span></p>
+      </div>
+      <div class="header-actions">
+        <select class="timeframe-select" id="timeframe-select" onchange="updateDashboardData()">
+          <option value="30">30 dias ▾</option>
+          <option value="7">7 dias</option>
+          <option value="90">90 dias</option>
+        </select>
+        <button class="btn-connect" onclick="toggleModal(true)">+ Conectar conta</button>
+      </div>
+    </header>
+
+    <!-- Metricas Principais -->
+    <section class="metrics-grid">
+      <div class="metric-card">
+        <span class="label">Visualizações</span>
+        <div class="value" id="metric-views">1,24 mi</div>
+        <div class="growth">↗ <span id="growth-views">18,6%</span> vs. período anterior</div>
+      </div>
+      <div class="metric-card">
+        <span class="label">Seguidores</span>
+        <div class="value" id="metric-followers">186,4 mil</div>
+        <div class="growth">↗ <span id="growth-followers">7,2%</span></div>
+      </div>
+      <div class="metric-card">
+        <span class="label">Engajamentos</span>
+        <div class="value" id="metric-engagements">74,8 mil</div>
+        <div class="growth">↗ <span id="growth-engagements">12,9%</span></div>
+      </div>
+      <div class="metric-card">
+        <span class="label">Taxa de engajamento</span>
+        <div class="value" id="metric-rate">6,04%</div>
+        <div class="growth">↗ <span id="growth-rate">0,8 p.p.</span></div>
+      </div>
+    </section>
+
+    <!-- Grafico -->
+    <section class="chart-card">
+      <h3>Desempenho por dia</h3>
+      <div class="chart-container">
+        <canvas id="performanceChart"></canvas>
+      </div>
+    </section>
+
+    <!-- Contas Conectadas -->
+    <section class="accounts-card">
+      <h3>Contas conectadas (8 Plataformas)</h3>
+      <div class="accounts-list" id="accounts-list">
+        <!-- Renderizado dinamicamente via Javascript -->
+      </div>
+    </section>
+  </main>
+
+  <!-- Modal para Configuração das APIs -->
+  <div class="modal-overlay" id="api-modal">
+    <div class="modal-content">
+      <h2>Conectar APIs das Redes Sociais</h2>
+      <p style="font-size: 0.85rem; color: var(--text-muted); margin-bottom: 20px;">
+        Insira as chaves de acesso (Bearer Tokens / API Keys) geradas nos painéis de desenvolvedor de cada rede social para sincronizar seus dados em tempo real.
+      </p>
+
+      <div class="api-field">
+        <label>Instagram / Facebook (Meta Graph Access Token)</label>
+        <input type="password" id="token-meta" placeholder="EAAG..." />
+      </div>
+      <div class="api-field">
+        <label>YouTube Data API Key</label>
+        <input type="password" id="token-youtube" placeholder="AIzaSy..." />
+      </div>
+      <div class="api-field">
+        <label>TikTok Developer Access Token</label>
+        <input type="password" id="token-tiktok" placeholder="act.123..." />
+      </div>
+      <div class="api-field">
+        <label>X (Twitter) Bearer Token</label>
+        <input type="password" id="token-x" placeholder="AAAAAAAAAAAAAAAAAAAAA..." />
+      </div>
+      <div class="api-field">
+        <label>Threads Access Token</label>
+        <input type="password" id="token-threads" placeholder="THQ..." />
+      </div>
+      <div class="api-field">
+        <label>Pinterest Access Token</label>
+        <input type="password" id="token-pinterest" placeholder="pina_..." />
+      </div>
+      <div class="api-field">
+        <label>Kwai Open API Key</label>
+        <input type="password" id="token-kwai" placeholder="kwai_..." />
+      </div>
+
+      <div class="modal-actions">
+        <button class="btn-secondary" onclick="toggleModal(false)">Cancelar</button>
+        <button class="btn-connect" onclick="saveTokens()">Salvar e Sincronizar</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // --- 1. MÓDULO DE INTEGRAÇÃO DAS APIS ---
+    class SocialAPIService {
+      constructor() {
+        this.tokens = JSON.parse(localStorage.getItem('social_api_tokens') || '{}');
+      }
+
+      saveTokens(tokens) {
+        this.tokens = tokens;
+        localStorage.setItem('social_api_tokens', JSON.stringify(tokens));
+      }
+
+      // Exemplo de chamada real para API do YouTube Data v3
+      async fetchYouTubeData() {
+        if (!this.tokens.youtube) return null;
+        try {
+          const res = await fetch(`https://www.googleapis.com/youtube/v3/channels?part=statistics&mine=true&key=${this.tokens.youtube}`);
+          const data = await res.json();
+          return data.items ? data.items[0].statistics : null;
+        } catch (e) {
+          console.error("Erro na API do YouTube:", e);
+          return null;
+        }
+      }
+
+      // Exemplo de chamada real para API do Instagram Graph
+      async fetchInstagramData() {
+        if (!this.tokens.meta) return null;
+        try {
+          const res = await fetch(`https://graph.instagram.com/me?fields=id,username,media_count,followers_count&access_token=${this.tokens.meta}`);
+          return await res.json();
+        } catch (e) {
+          console.error("Erro na API do Instagram:", e);
+          return null;
+        }
+      }
+
+      // Estrutura de status de conexão para as 8 plataformas
+      getPlatformsStatus() {
+        return [
+          { name: 'Instagram', code: 'IG', handle: '@jurubebeitos', followers: '98,2 mil', connected: !!this.tokens.meta },
+          { name: 'TikTok', code: 'TK', handle: '@jurubebeitos_tt', followers: '45,1 mil', connected: !!this.tokens.tiktok },
+          { name: 'YouTube', code: 'YT', handle: 'Jurubebeitos TV', followers: '28,4 mil', connected: !!this.tokens.youtube },
+          { name: 'Facebook', code: 'FB', handle: 'Página Jurubebeitos', followers: '12,0 mil', connected: !!this.tokens.meta },
+          { name: 'X', code: 'X', handle: '@jurubebeitos_x', followers: '8,9 mil', connected: !!this.tokens.x },
+          { name: 'Threads', code: 'TH', handle: '@jurubebeitos', followers: '6,2 mil', connected: !!this.tokens.threads },
+          { name: 'Pinterest', code: 'PT', handle: 'Jurubebeitos Pins', followers: '3,1 mil', connected: !!this.tokens.pinterest },
+          { name: 'Kwai', code: 'KW', handle: '@jurubebeitos_kw', followers: '15,8 mil', connected: !!this.tokens.kwai }
+        ];
+      }
+    }
+
+    const apiService = new SocialAPIService();
+    let chartInstance = null;
+
+    // --- 2. GERENCIAMENTO DA INTERFACE E GRÁFICOS ---
+    function initChart() {
+      const ctx = document.getElementById('performanceChart').getContext('2d');
+      chartInstance = new Chart(ctx, {
+        type: 'line',
+        data: {
+          labels: ['21/07', '24/07', '27/07', '30/07', '02/08', '05/08', '08/08', '11/08', '14/08', '19/08'],
+          datasets: [{
+            label: 'Visualizações Diárias',
+            data: [21000, 28000, 25000, 39000, 35000, 46000, 42000, 58000, 53000, 69000],
+            borderColor: '#38bdf8',
+            backgroundColor: 'rgba(56, 189, 248, 0.1)',
+            borderWidth: 3,
+            tension: 0.4,
+            pointBackgroundColor: '#38bdf8',
+            pointRadius: 4,
+            fill: true
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: { legend: { display: false } },
+          scales: {
+            x: { grid: { color: 'rgba(255,255,255,0.05)' }, ticks: { color: '#9ca3af' } },
+            y: { grid: { color: 'rgba(255,255,255,0.05)' }, ticks: { color: '#9ca3af' } }
+          }
+        }
+      });
+    }
+
+    function renderAccounts() {
+      const listEl = document.getElementById('accounts-list');
+      const platforms = apiService.getPlatformsStatus();
+      
+      listEl.innerHTML = platforms.map(p => `
+        <div class="account-item">
+          <div class="account-info">
+            <div class="platform-icon">${p.code}</div>
+            <div class="account-details">
+              <h4>${p.name}</h4>
+              <p>${p.handle} · ${p.followers} seg.</p>
+            </div>
+          </div>
+          <div class="status-badge ${p.connected ? '' : 'disconnected'}" title="${p.connected ? 'Conectado via API' : 'Desconectado'}"></div>
+        </div>
+      `).join('');
+    }
+
+    function updateDashboardData() {
+      const days = document.getElementById('timeframe-select').value;
+      document.getElementById('timeframe-label').innerText = `Últimos ${days} dias`;
+      
+      // Atualização simulada proporcional ao tempo selecionado
+      const factor = days / 30;
+      document.getElementById('metric-views').innerText = `${(1.24 * factor).toFixed(2)} mi`;
+      document.getElementById('metric-engagements').innerText = `${(74.8 * factor).toFixed(1)} mil`;
+
+      // Atualiza o gráfico com novas oscilações
+      const baseData = [21, 28, 25, 39, 35, 46, 42, 58, 53, 69];
+      chartInstance.data.datasets[0].data = baseData.map(v => Math.round(v * (0.8 + Math.random() * 0.4)));
+      chartInstance.update();
+    }
+
+    function toggleModal(show) {
+      document.getElementById('api-modal').style.display = show ? 'flex' : 'none';
+    }
+
+    function saveTokens() {
+      const tokens = {
+        meta: document.getElementById('token-meta').value,
+        youtube: document.getElementById('token-youtube').value,
+        tiktok: document.getElementById('token-tiktok').value,
+        x: document.getElementById('token-x').value,
+        threads: document.getElementById('token-threads').value,
+        pinterest: document.getElementById('token-pinterest').value,
+        kwai: document.getElementById('token-kwai').value,
+      };
+      apiService.saveTokens(tokens);
+      renderAccounts();
+      toggleModal(false);
+      alert('Credenciais salvas com sucesso no seu navegador!');
+    }
+
+    // Inicialização
+    window.onload = () => {
+      initChart();
+      renderAccounts();
+    };
+  </script>
+</body>
+</html>
