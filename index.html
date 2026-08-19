@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SocialPulse — Dashboard</title>
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<style>
+*{box-sizing:border-box}body{margin:0;font-family:Inter,system-ui,-apple-system,Segoe UI,sans-serif;background:#0b0d12;color:#f5f7fb}
+.app{display:flex;min-height:100vh}.sidebar{width:245px;background:#10131a;border-right:1px solid #222733;padding:24px 16px;position:fixed;inset:0 auto 0 0}.brand{font-size:22px;font-weight:800;margin:4px 10px 32px}.brand span{color:#8b5cf6}.nav a{display:block;padding:12px 13px;margin:5px 0;color:#9da5b5;text-decoration:none;border-radius:10px;font-size:14px}.nav a.active,.nav a:hover{background:#1b1f2a;color:white}.main{margin-left:245px;flex:1;padding:28px;max-width:1500px}.top{display:flex;justify-content:space-between;align-items:center;margin-bottom:28px}.top h1{margin:0;font-size:27px}.top p{margin:5px 0 0;color:#8992a3;font-size:13px}.actions{display:flex;gap:10px}.btn{border:1px solid #303644;background:#171b24;color:white;border-radius:9px;padding:10px 14px;cursor:pointer}.btn.primary{background:#7c3aed;border-color:#7c3aed}.cards{display:grid;grid-template-columns:repeat(4,1fr);gap:14px}.card{background:#12161e;border:1px solid #242a35;border-radius:14px;padding:18px}.label{font-size:12px;color:#8d96a7}.value{font-size:27px;font-weight:750;margin:8px 0}.trend{font-size:12px;color:#50d890}.trend.down{color:#ff6f91}.grid{display:grid;grid-template-columns:2fr 1fr;gap:14px;margin-top:14px}.panel{background:#12161e;border:1px solid #242a35;border-radius:14px;padding:20px}.panel h3{margin:0 0 16px;font-size:15px}.chartbox{height:290px}.accounts{display:flex;flex-direction:column;gap:10px}.account{display:flex;align-items:center;gap:12px;padding:12px;background:#171b24;border-radius:11px}.icon{width:36px;height:36px;border-radius:10px;display:grid;place-items:center;font-weight:800;background:#252b38}.account small{display:block;color:#8992a3;margin-top:2px}.dot{margin-left:auto;width:8px;height:8px;border-radius:50%;background:#46d483}.table{width:100%;border-collapse:collapse}.table th,.table td{text-align:left;padding:13px 8px;border-bottom:1px solid #242a35;font-size:13px}.table th{color:#858e9f;font-weight:500}.badge{padding:5px 8px;border-radius:8px;background:#1c2330;color:#c8d0dd;font-size:11px}.footer-note{margin-top:18px;color:#697386;font-size:11px}.modal{position:fixed;inset:0;background:#0009;display:none;align-items:center;justify-content:center}.modal.show{display:flex}.modalbox{background:#151922;border:1px solid #303644;border-radius:16px;padding:24px;width:min(430px,90%)}.modalbox h2{margin-top:0}.platform{display:flex;gap:10px;margin:14px 0}.platform button{flex:1;padding:12px;border-radius:10px;border:1px solid #303644;background:#1b202b;color:white;cursor:pointer}.close{float:right;background:none;border:0;color:#aaa;font-size:22px;cursor:pointer}
+@media(max-width:900px){.sidebar{width:70px;padding:20px 8px}.brand{font-size:0;text-align:center}.brand span{font-size:22px}.nav a{font-size:0;text-align:center}.nav a:first-letter{font-size:18px}.main{margin-left:70px;padding:18px}.cards{grid-template-columns:repeat(2,1fr)}.grid{grid-template-columns:1fr}}
+@media(max-width:560px){.cards{grid-template-columns:1fr}.top{align-items:flex-start;gap:10px;flex-direction:column}.actions{width:100%}.actions .btn{flex:1}}
+</style>
+</head>
+<body>
+<div class="app">
+<aside class="sidebar">
+  <div class="brand">Social<span>Pulse</span></div>
+  <nav class="nav">
+    <a class="active" href="#">⌂ &nbsp; Visão geral</a>
+    <a href="#">◉ &nbsp; Contas</a>
+    <a href="#">▣ &nbsp; Conteúdos</a>
+    <a href="#">↗ &nbsp; Comparar</a>
+    <a href="#">⚙ &nbsp; Configurações</a>
+  </nav>
+</aside>
+<main class="main">
+  <div class="top">
+    <div><h1>Visão geral</h1><p>Todos os seus canais em um só painel · Últimos 30 dias</p></div>
+    <div class="actions"><button class="btn" onclick="alert('Seletor de período: 7, 30, 90 dias ou personalizado.')">30 dias ▾</button><button class="btn primary" onclick="openModal()">＋ Conectar conta</button></div>
+  </div>
+
+  <section class="cards">
+    <div class="card"><div class="label">Visualizações</div><div class="value">1,24 mi</div><div class="trend">↗ 18,6% vs. período anterior</div></div>
+    <div class="card"><div class="label">Seguidores</div><div class="value">186,4 mil</div><div class="trend">↗ 7,2%</div></div>
+    <div class="card"><div class="label">Engajamentos</div><div class="value">74,8 mil</div><div class="trend">↗ 12,9%</div></div>
+    <div class="card"><div class="label">Taxa de engajamento</div><div class="value">6,04%</div><div class="trend">↗ 0,8 p.p.</div></div>
+  </section>
+
+  <section class="grid">
+    <div class="panel"><h3>Desempenho por dia</h3><div class="chartbox"><canvas id="lineChart"></canvas></div></div>
+    <div class="panel"><h3>Contas conectadas</h3><div class="accounts">
+      <div class="account"><div class="icon">IG</div><div><b>Jurubebeitos</b><small>Instagram · 98,2 mil seguidores</small></div><span class="dot"></span></div>
+      <div class="account"><div class="icon">FB</div><div><b>Jurubebeitos</b><small>Facebook · 61,7 mil seguidores</small></div><span class="dot"></span></div>
+      <div class="account"><div class="icon">YT</div><div><b>Azarssauro</b><small>YouTube · 24,1 mil inscritos</small></div><span class="dot"></span></div>
+      <div class="account"><div class="icon">IG</div><div><b>Marombeitos</b><small>Instagram · 2,4 mil seguidores</small></div><span class="dot"></span></div>
+    </div></div>
+  </section>
+
+  <section class="panel" style="margin-top:14px">
+    <h3>Conteúdos com melhor desempenho</h3>
+    <table class="table">
+      <thead><tr><th>Conteúdo</th><th>Rede</th><th>Visualizações</th><th>Engajamentos</th><th>Resultado</th></tr></thead>
+      <tbody>
+        <tr><td>“Quando chega o sexto dia útil...”</td><td><span class="badge">Instagram</span></td><td>482.100</td><td>38.420</td><td class="trend">+42%</td></tr>
+        <tr><td>“Eu vendo isso acontecendo...”</td><td><span class="badge">Facebook</span></td><td>321.700</td><td>21.840</td><td class="trend">+31%</td></tr>
+        <tr><td>“POV: você foi treinar...”</td><td><span class="badge">Instagram</span></td><td>188.400</td><td>9.760</td><td class="trend">+18%</td></tr>
+        <tr><td>“Melhores momentos da partida”</td><td><span class="badge">YouTube</span></td><td>74.200</td><td>4.180</td><td class="trend down">-6%</td></tr>
+      </tbody>
+    </table>
+    <div class="footer-note">Protótipo com dados demonstrativos. Os dados reais serão carregados após a autorização das contas pelas APIs oficiais.</div>
+  </section>
+</main>
+</div>
+
+<div class="modal" id="modal">
+ <div class="modalbox">
+   <button class="close" onclick="closeModal()">×</button>
+   <h2>Conectar uma conta</h2>
+   <p style="color:#8d96a7">Escolha uma plataforma para iniciar a autorização.</p>
+   <div class="platform"><button onclick="demo('Instagram')">Instagram</button><button onclick="demo('Facebook')">Facebook</button></div>
+   <div class="platform"><button onclick="demo('YouTube')">YouTube</button><button onclick="demo('TikTok')">TikTok</button></div>
+ </div>
+</div>
+<script>
+const labels=['21/07','24/07','27/07','30/07','02/08','05/08','08/08','11/08','14/08','19/08'];
+const data=[21000,28000,25000,39000,35000,46000,42000,58000,53000,69000];
+new Chart(document.getElementById('lineChart'),{type:'line',data:{labels,datasets:[{label:'Visualizações',data,borderWidth:2,tension:.35,fill:false}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{x:{grid:{display:false},ticks:{color:'#778094'}},y:{grid:{color:'#252b35'},ticks:{color:'#778094',callback:v=>v/1000+'k'}}}}});
+function openModal(){document.getElementById('modal').classList.add('show')}
+function closeModal(){document.getElementById('modal').classList.remove('show')}
+function demo(name){alert(name+' selecionado. No próximo passo, esta ação será substituída pelo OAuth oficial da plataforma.');closeModal()}
+</script>
+</body>
+</html>
